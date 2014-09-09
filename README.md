@@ -1,2 +1,2 @@
-mindspy-python
+MindSpy-python
 ==============
