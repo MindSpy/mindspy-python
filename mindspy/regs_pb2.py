@@ -13,7 +13,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='regs.proto',
   package='',
-  serialized_pb='\n\nregs.proto\"\xf3\x01\n\x07Request\x12\x1f\n\x06\x61\x63tion\x18\x01 \x02(\x0e\x32\x0f.Request.Action\x12\x11\n\ttimestamp\x18\x02 \x02(\x04\x12\r\n\x05reqid\x18\x07 \x02(\r\x12\x15\n\x06stream\x18\x06 \x01(\x08:\x05\x66\x61lse\x12\r\n\x05start\x18\x03 \x01(\r\x12\r\n\x05\x63ount\x18\x04 \x01(\r\x12\x0f\n\x07payload\x18\x05 \x01(\x0c\"_\n\x06\x41\x63tion\x12\x08\n\x04\x45\x43HO\x10\x00\x12\r\n\tGET_STATE\x10\x02\x12\r\n\tSET_STATE\x10\x03\x12\x0b\n\x07SAMPLES\x10\x01\x12\x08\n\x04TEST\x10\x04\x12\x07\n\x03LED\x10\x05\x12\r\n\tSTIMULATE\x10\x06\")\n\x05State\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\r\x12\x0f\n\x07payload\x18\x02 \x02(\r\"+\n\x06Sample\x12\x10\n\x08sequence\x18\x01 \x02(\x04\x12\x0f\n\x07payload\x18\x02 \x03(\x05\"\xd9\x01\n\x08Response\x12(\n\x05\x65rror\x18\x01 \x01(\x0e\x32\x0f.Response.ErrNo:\x08NO_ERROR\x12\x11\n\terror_msg\x18\x02 \x01(\t\x12\x11\n\ttimestamp\x18\x03 \x02(\x04\x12\r\n\x05reqid\x18\x06 \x02(\r\x12\x15\n\x05state\x18\x04 \x03(\x0b\x32\x06.State\x12\x17\n\x06sample\x18\x05 \x03(\x0b\x32\x07.Sample\">\n\x05\x45rrNo\x12\x0c\n\x08NO_ERROR\x10\x00\x12\x13\n\x0fHANDLER_MISSING\x10\x01\x12\x12\n\x0eHANDLER_FAILED\x10\x02\x42\x1d\n\x15org.mindspy.protobufsB\x04Regs')
+  serialized_pb='\n\nregs.proto\"\x87\x02\n\x07Request\x12\x1f\n\x06\x61\x63tion\x18\x01 \x02(\x0e\x32\x0f.Request.Action\x12\x11\n\ttimestamp\x18\x02 \x02(\x04\x12\r\n\x05start\x18\x03 \x01(\r\x12\r\n\x05\x63ount\x18\x04 \x01(\r\x12\x0f\n\x07payload\x18\x05 \x01(\x0c\x12\x15\n\x06stream\x18\x06 \x01(\x08:\x05\x66\x61lse\x12\r\n\x05reqid\x18\x07 \x02(\r\x12\x12\n\x06module\x18\x08 \x01(\x05:\x02-1\"_\n\x06\x41\x63tion\x12\x08\n\x04\x45\x43HO\x10\x00\x12\r\n\tGET_STATE\x10\x02\x12\r\n\tSET_STATE\x10\x03\x12\x0b\n\x07SAMPLES\x10\x01\x12\x08\n\x04TEST\x10\x04\x12\x07\n\x03LED\x10\x05\x12\r\n\tSTIMULATE\x10\x06\")\n\x05State\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x02(\r\x12\x0f\n\x07payload\x18\x02 \x02(\r\"+\n\x06Sample\x12\x10\n\x08sequence\x18\x01 \x02(\x04\x12\x0f\n\x07payload\x18\x02 \x03(\x05\"\xe9\x01\n\x08Response\x12(\n\x05\x65rror\x18\x01 \x01(\x0e\x32\x0f.Response.ErrNo:\x08NO_ERROR\x12\x11\n\terror_msg\x18\x02 \x01(\t\x12\x11\n\ttimestamp\x18\x03 \x02(\x04\x12\x15\n\x05state\x18\x04 \x03(\x0b\x32\x06.State\x12\x17\n\x06sample\x18\x05 \x03(\x0b\x32\x07.Sample\x12\r\n\x05reqid\x18\x06 \x02(\r\x12\x0e\n\x06module\x18\x07 \x02(\x05\">\n\x05\x45rrNo\x12\x0c\n\x08NO_ERROR\x10\x00\x12\x13\n\x0fHANDLER_MISSING\x10\x01\x12\x12\n\x0eHANDLER_FAILED\x10\x02\x42\x1d\n\x15org.mindspy.protobufsB\x04Regs')
 
 
 
@@ -54,8 +54,8 @@ _REQUEST_ACTION = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=163,
-  serialized_end=258,
+  serialized_start=183,
+  serialized_end=278,
 )
 
 _RESPONSE_ERRNO = _descriptor.EnumDescriptor(
@@ -79,8 +79,8 @@ _RESPONSE_ERRNO = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=504,
-  serialized_end=566,
+  serialized_start=540,
+  serialized_end=602,
 )
 
 
@@ -106,37 +106,44 @@ _REQUEST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='reqid', full_name='Request.reqid', index=2,
-      number=7, type=13, cpp_type=3, label=2,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='stream', full_name='Request.stream', index=3,
-      number=6, type=8, cpp_type=7, label=1,
-      has_default_value=True, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='start', full_name='Request.start', index=4,
+      name='start', full_name='Request.start', index=2,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='count', full_name='Request.count', index=5,
+      name='count', full_name='Request.count', index=3,
       number=4, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='payload', full_name='Request.payload', index=6,
+      name='payload', full_name='Request.payload', index=4,
       number=5, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value="",
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='stream', full_name='Request.stream', index=5,
+      number=6, type=8, cpp_type=7, label=1,
+      has_default_value=True, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='reqid', full_name='Request.reqid', index=6,
+      number=7, type=13, cpp_type=3, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='module', full_name='Request.module', index=7,
+      number=8, type=5, cpp_type=1, label=1,
+      has_default_value=True, default_value=-1,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -151,7 +158,7 @@ _REQUEST = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=15,
-  serialized_end=258,
+  serialized_end=278,
 )
 
 
@@ -185,8 +192,8 @@ _STATE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=260,
-  serialized_end=301,
+  serialized_start=280,
+  serialized_end=321,
 )
 
 
@@ -220,8 +227,8 @@ _SAMPLE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=303,
-  serialized_end=346,
+  serialized_start=323,
+  serialized_end=366,
 )
 
 
@@ -254,23 +261,30 @@ _RESPONSE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='reqid', full_name='Response.reqid', index=3,
-      number=6, type=13, cpp_type=3, label=2,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='state', full_name='Response.state', index=4,
+      name='state', full_name='Response.state', index=3,
       number=4, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='sample', full_name='Response.sample', index=5,
+      name='sample', full_name='Response.sample', index=4,
       number=5, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='reqid', full_name='Response.reqid', index=5,
+      number=6, type=13, cpp_type=3, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='module', full_name='Response.module', index=6,
+      number=7, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -284,8 +298,8 @@ _RESPONSE = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=349,
-  serialized_end=566,
+  serialized_start=369,
+  serialized_end=602,
 )
 
 _REQUEST.fields_by_name['action'].enum_type = _REQUEST_ACTION
