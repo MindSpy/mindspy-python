@@ -1,16 +1,26 @@
-import signal
-
-from .regs_pb2 import Request, Response
+import logging
+logger = logging.getLogger(__name__)
 
 class MindSpy(object):
-  def __init__(self):
-    self._req = Request()
-    self._res = Response()
+  def __init__(self, stream):
+    from itertools import count
+    from Queue import Queue
+    from threading import Thread
+    self._reqid = count()
+    self._stream = stream
+    self._queue = Queue()
+    class T(Thread):
+        def __init__(self, target):
+            super(T, self).__init__(target=target)
+            self.daemon = True
+            self.name = 'messagereader'
+    self._t = T( self._read)
+    self._t.start()
 
   @staticmethod
   def _timestamp():
     from time import time
-    return int(time())
+    return int(time()*1e6)  #in micros
 
   @staticmethod
   def _encode_varint(i):
@@ -31,75 +41,115 @@ class MindSpy(object):
     return MindSpy._encode_varint(len(buff)) +  buff
 
   @staticmethod
-  def _deserialize_delimited(serialized, message):
+  def _deserialize_delimited(serialized, Message):
     count, token = MindSpy._decode_varint(serialized)
+    if token+count >= len(serialized):
+        return None, serialized
     rest = serialized[token:token+count]
-    message.MergeFromString(rest)
-    return message, serialized[token+count:]
+    msg = Message()
+    msg.MergeFromString(rest)
+    return msg, serialized[token+count:]
 
   def _req_init(self):
-    self._req.Clear()
-    self._req.timestamp = self._timestamp()
-    return self._req
+    from .regs_pb2 import Request
+
+    req = Request()
+    req.timestamp = self._timestamp()
+    req.reqid = self._reqid.next()
+    return req
 
   def _req_echo(self):
+    from .regs_pb2 import Request
+
     req = self._req_init()
     req.action = Request.ECHO
-    return self._serialize_delimited(req)
+    return req
 
   def _req_led(self):
+    from .regs_pb2 import Request
+
     req = self._req_init()
     req.action = Request.LED
-    return self._serialize_delimited(req)
+    return req
 
   def _req_get_state(self, start, count):
+    from .regs_pb2 import Request
+
     req = self._req_init()
     req.action = Request.GET_STATE
     req.start = start
     req.count = count
-    return self._serialize_delimited(req)
+    return req
 
   def _req_set_state(self, start, payload):
+    from .regs_pb2 import Request
+
     req = self._req_init()
     req.action = Request.SET_STATE
     req.start = start
     req.payload = payload
-    return self._serialize_delimited(req)
+    return req
 
   def _req_get_samples(self, count, stream = False):
+    from .regs_pb2 import Request
+
     req = self._req_init()
     req.action = Request.SAMPLES
     req.count = count
     req.stream = stream
-    return self._serialize_delimited(req)
+    return req
 
-  def _res_all(self, serialized):
-    msg, rest = self._deserialize_delimited(serialized, self._res)
-    return msg, rest
+  def _read(self):
+      from time import sleep
+      from Queue import Full
+      from .regs_pb2 import Response
 
-  def handle(self, req, stream):
-      stream.write(req)
-      buff = stream.readall()
+      logger.debug('Starting mesage receiver thread.')
+
+      while self._t.is_alive():
+
+          if self._stream.isOpen():
+              sleep(0.1)
+
+          buff = self._stream.readall()
+          if buff:
+              msg, buff = self._deserialize_delimited(buff, Response)
+              if msg: print 'response:\n%s'% msg
+              while msg:
+                  try:
+                      self._queue.put(msg,timeout=0.1)
+                      msg = None
+                  except Full:
+                      pass
+
+          sleep(0.1)
+      print 'the end'
+      logger.warn('Terminating mesage receiver thread.')
+
+  def handle(self, req, timeout= 1.0 ):
+      from Queue import Empty
+      if req: print 'request:\n%s'% req
+      reqid = req.reqid
+      self._stream.write(self._serialize_delimited(req))
       while True:
-          msg, buff = self._res_all(buff)
-          yield msg
-          buff += stream.readall()
-          if not buff:
+          try:
+              msg = self._queue.get(timeout=timeout)
+              if msg.reqid == reqid:
+                  yield msg
+          except Empty:
               break
 
-  def handle_echo(self, stream, *args, **kwargs):
-      return self.handle(self._req_echo(*args, **kwargs), stream)
+  def echo(self, timeout=1.0 ):
+      return self.handle(self._req_echo(), timeout=timeout )
 
-  def handle_get_state(self, stream, *args, **kwargs):
-      return self.handle(self._req_get_state(*args, **kwargs), stream)
+  def get_state(self, start, count, timeout=1.0 ):
+      return self.handle(self._req_get_state(start=start, count=count), timeout=timeout )
 
-  def handle_set_state(self, stream, *args, **kwargs):
-      return self.handle(self._req_set_state(*args, **kwargs), stream)
+  def set_state(self, start, payload, timeout=1.0 ):
+      return self.handle(self._req_set_state(start=start, payload=payload), timeout=timeout )
 
-  def handle_get_samples(self, stream, *args, **kwargs):
-      return self.handle(self._req_get_samples(*args, **kwargs), stream)
+  def get_samples(self, count, stream = False, timeout=1.0 ):
+      return self.handle(self._req_get_samples(count=count, stream = stream), timeout=timeout )
 
-
-
-
-
+  def get_stream(self, count, timeout=1.0 ):
+      pass # not implemented
