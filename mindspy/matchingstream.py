@@ -7,7 +7,7 @@ from threading import RLock
 from Queue import Empty, Full
 import logging
 
-from mindspy import CodedStream
+from .codedstream import CodedStream
 
 logger = logging.getLogger(__name__)
 
