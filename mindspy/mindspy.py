@@ -1,157 +1,125 @@
+
+__all__ = [ 'MindSpy', 'Sensor' ]
+
+from itertools import count, imap
+from time import time
+from random import randint
 import logging
+
+from .matchingstream import MatchingStream
+from .proto import Request
+
 logger = logging.getLogger(__name__)
 
+class Sensor(object):
+    def __init__(self, device, module, name):
+        if not isinstance(device, MindSpy):
+            raise TypeError("Expecting MindSpy instance.")
+        self._dev = device
+        self._mod = module
+        self._name = name
+
+    def echo(self, timeout=1.0, **kw ):
+        kw.update(module= self._mod)
+        return self._dev.echo(timeout=timeout, **kw)
+
+    def getModelName(self, timeout=1.0, **kw ):
+        kw.update(module= self._mod)
+        return self._dev.getModelName(timeout=timeout, **kw)
+
+    def getState(self, addresses, timeout=1.0, **kw ):
+        kw.update(module= self._mod)
+        return self._dev.getState(addresses, timeout=timeout, **kw)
+
+    def getSamples(self, count, timeout=1.0, **kw ):
+        kw.update(module= self._mod)
+        return self._dev.getSamples(count, timeout=timeout, **kw)
+
+    def setState(self, states, timeout=1.0, **kw ):
+        kw.update(module= self._mod)
+        return self._dev.setState(states, timeout=timeout, **kw)
+
 class MindSpy(object):
-    def __init__(self, stream):
-        from itertools import count
-        from Queue import Queue
-        from threading import Thread
-        self._reqid = count()
-        self._stream = stream
-        self._readbuffer = ''
-        self._queue = Queue()
-        class T(Thread):
-            def __init__(self, target):
-                super(T, self).__init__(target=target)
-                self.daemon = True
-                self.name = 'messagereader'
-        self._t = T( self._read)
-        #self._t.start()
 
     @staticmethod
     def _timestamp():
-        from time import time
         return int(time()*1e6)  #in micros
 
     @staticmethod
-    def _encode_varint(i):
-        from google.protobuf.internal.encoder import _EncodeVarint
-        buff = bytearray()
-        _EncodeVarint(buff.append, i)
-        return buff
+    def _id():
+        return randint(0, 2**32-1)
 
-    @staticmethod
-    def _decode_varint(s):
-        from google.protobuf.internal.decoder import _DecodeVarint
-        i,t = _DecodeVarint(s,0)
-        return i,t
+    _seq_counter = count()
 
-    @staticmethod
-    def _serialize_delimited(message):
-        buff = message.SerializeToString()
-        return MindSpy._encode_varint(len(buff)) +  buff
+    @classmethod
+    def _seq(cls):
+        return cls._seq_counter.next()
 
-    @staticmethod
-    def _deserialize_delimited(serialized, Message):
-        try:
-            count, token = MindSpy._decode_varint(serialized)
-        except IndexError:
-            return None, serialized
-        if token+count >= len(serialized):
-            return None, serialized
-        rest = serialized[token:token+count]
-        msg = Message()
-        msg.MergeFromString(rest)
-        return msg, serialized[token+count:]
+    def __init__(self, stream):
+        if not isinstance(stream, MatchingStream):
+            raise TypeError("Expecting MatchingStream instance.")
+        self._stream = stream
+
+    def handle(self, req, timeout=1.0, extract=None):
+        if not extract:
+            extract = lambda x:x
+        # send request to stream queue
+        self._stream.put(req, timeout=timeout)
+        # receive responses from stream queue
+        result = self._stream.get(req.reqid, timeout=timeout)
+        # extract values from the reponses
+        return imap(extract, result)
 
     def _req_init(self, **kw):
-        from .regs_pb2 import Request
         req = Request()
         req.timestamp = self._timestamp()
-        req.reqid = self._reqid.next()
+        req.reqid = self._id()
+
         for k,v in kw.items():
-            setattr(req, k, v)
+            if hasattr(req, k):
+                setattr(req, k, v)
+
         return req
 
-    def _req_echo(self):
-        from .regs_pb2 import Request
-        return self._req_init(action = Request.ECHO)
+    def _req_echo(self, **kw):
+        req = self._req_init(**kw)
+        return req
 
-    def _req_led(self):
-        from .regs_pb2 import Request
-        return self._req_init(action = Request.LED)
+    def _req_get_model_name(self, **kw):
+        req = self._req_init(**kw)
+        req.getModelName.MergeFromString('')
+        return req
 
-    def _req_get_state(self, start, count):
-        from .regs_pb2 import Request
-        return self._req_init(action = Request.GET_STATE, start = start, count = count)
+    def _req_get_state(self, addresses, **kw):
+        req = self._req_init(**kw)
+        req.getState.addresses.extend(addresses)
+        return req
 
-    def _req_set_state(self, start, payload):
-        from .regs_pb2 import Request
-        return self._req_init(action = Request.SET_STATE, start = start, payload = payload)
+    def _req_set_state(self, states, **kw):
+        req = self._req_init(**kw)
+        req.setState.states.extend(states)
+        return req
 
-    def _req_get_samples(self, count, stream = False):
-        from .regs_pb2 import Request
-        return self._req_init(action = Request.SAMPLES, count = count, stream = stream )
+    def _req_get_samples(self, count, **kw):
+        req = self._req_init(**kw)
+        req.getSamples.count = count
+        return req
 
-    def _read(self):
-        from time import sleep
-        from Queue import Full
-        from .regs_pb2 import Response
+    def echo(self, timeout=1.0, **kw ):
+        return self.handle(self._req_echo(**kw), timeout=timeout)
 
-        buff = ''
+    def getModelName(self, timeout=1.0, **kw ):
+        return self.handle(self._req_get_model_name(**kw), timeout=timeout, extract=lambda msg: msg.modelName)
 
-        logger.debug('Starting mesage receiver thread.')
-        print 'start'
+    def getState(self, addresses, timeout=1.0, **kw ):
+        return self.handle(self._req_get_state(addresses, **kw), timeout=timeout, extract=lambda msg: msg.states)
 
-        while self._t.is_alive():
+    def setState(self, states, timeout=1.0, **kw ):
+        return self.handle(self._req_set_state(states, **kw), timeout=timeout, extract=lambda msg: None )
 
-            if not self._stream.isOpen():
-                sleep(0.1)
-                continue
+    def getSamples(self, count, timeout=1.0, **kw ):
+        return self.handle(self._req_get_samples(count, **kw), timeout=timeout, extract=lambda msg: msg.samples )
 
-            buff += self._stream.readall()
-            if buff:
-                msg, buff = self._deserialize_delimited(buff, Response)
-                if msg: print 'response:\n%s'% msg
-                while msg:
-                    try:
-                        self._queue.put(msg,timeout=0.1)
-                        msg = None
-                    except Full:
-                        pass
-
-            sleep(0.1)
-
-        print 'the end'
-        logger.warn('Terminating mesage receiver thread.')
-
-    def _write_request(self, msg):
-        from time import sleep
-        while not self._stream.isOpen():
-            sleep(0.1)
-        buff = self._serialize_delimited(msg)
-        self._stream.write(buff)
-
-
-    def _read_response(self):
-        from time import sleep
-        from .regs_pb2 import Response
-        while not self._stream.isOpen():
-            sleep(0.1)
-        msg = None
-        while msg is None:
-            msg, self._readbuffer = self._deserialize_delimited(self._readbuffer + self._stream.read(self._stream.inWaiting()), Response)
-            sleep(0.1)
-        return msg
-
-    def handle(self, req, timeout= 1.0 ):
-        from Queue import Empty
-        if req: print 'request:\n%s'% req
-        reqid = req.reqid
-        self._write_request(req)
-        return self._read_response()
-
-    def echo(self, timeout=1.0 ):
-        return self.handle(self._req_echo(), timeout=timeout )
-
-    def get_state(self, start, count, timeout=1.0 ):
-        return self.handle(self._req_get_state(start=start, count=count), timeout=timeout )
-
-    def set_state(self, start, payload, timeout=1.0 ):
-        return self.handle(self._req_set_state(start=start, payload=payload), timeout=timeout )
-
-    def get_samples(self, count, stream = False, timeout=1.0 ):
-        return self.handle(self._req_get_samples(count=count, stream = stream), timeout=timeout )
-
-    def get_stream(self, count, timeout=1.0 ):
-        pass # not implemented
+    def sensors(self, timeout = 1.0):
+        for res in self.handle(self._req_get_model_name(), timeout=timeout ):
+            yield Sensor(self, res.module, res.modelName)
