@@ -17,11 +17,9 @@ import matplotlib.animation as animation
 from mindspy import Request, Response, CodedSubprocessStream, MatchingStream, MindSpy, State
 from mindspy.matchingstream import synchronized
 
-from time import sleep
-
-class StoppebleLoopDaemonThread(Thread):
+class StoppableLoopDaemonThread(Thread):
     def __init__(self):
-        super(StoppebleLoopDaemonThread, self).__init__()
+        super(StoppableLoopDaemonThread, self).__init__()
         self.daemon = True
         self._stop = Event()
     def stop(self):
@@ -32,15 +30,15 @@ class StoppebleLoopDaemonThread(Thread):
     def loop(self):
         raise Exception("Not implemented.")
 
-class MessageConsumer(StoppebleLoopDaemonThread):
+class MessageConsumer(StoppableLoopDaemonThread):
     def __init__(self, gen, buff):
         super(MessageConsumer, self).__init__()
-        self._buff = buff
+        self._buffer = buff
         self._generator = gen
     def loop(self):
         try:
             samples = self._generator.next()
-            with self._buff as buff:
+            with self._buffer as buff:
                 for s in samples:
                     for buf,val in zip(buff,s.payload):
                         buf.pop()
@@ -82,18 +80,21 @@ if __name__ == '__main__':
         State(payload=fsig, address=2),
         State(payload=amp, address=3)
     ]
+    # set sensor state
     sensors[0].setState(states)
-
+    # sample generator
     data = sensors[0].getSamples(3, stream=True, timeout=1.0)
+    # buffer for plots
     buffer = synchronized([ deque([0.0]*plotlen) for i in range(nchan) ])
 
-    # set up animation
+    # set up axes
     f, axarr = plt.subplots(nchan, sharex=True)
     for ax in axarr:
         ax.set_xlim(0, 1.*plotlen/fsamp)
         ax.set_ylim(-150, 150)
     axes = [ ax.plot([], [])[0] for ax in axarr ]
 
+    # set up animation
     anim = Animation(f, buffer, axes, plotlen, fsamp)
 
     # start message consumer
@@ -107,6 +108,6 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('exiting')
 
-    t.stop()
-    t.join()
+    # terminate
+
 
