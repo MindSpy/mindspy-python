@@ -11,6 +11,20 @@ from .codedstream import CodedStream
 
 logger = logging.getLogger(__name__)
 
+
+class SynchronizedContainer:
+    def __init__(self, obj):
+        self._o = obj
+        self._lock = RLock()
+    def __enter__(self):
+        if self._lock.__enter__():
+            return self._o
+    def __exit__(self, t, v, tb):
+        self._lock.__exit__(t, v, tb)
+    def __call__(self, *a, **kw):
+        with self as sfnc:
+            return sfnc(*a, **kw)
+
 def synchronized(obj):
     """Create synchronized container based on RLock.
 
@@ -30,20 +44,6 @@ def synchronized(obj):
             with data as d:
                 d[key] = value
     """
-
-    class SynchronizedContainer:
-        def __init__(self, obj):
-            self._o = obj
-            self._l = RLock()
-        def __enter__(self):
-            if self._l.__enter__():
-                return self._o
-        def __exit__(self, t, v, tb):
-            self._l.__exit__(t, v, tb)
-        def __call__(self, *a, **kw):
-            with self as sfnc:
-                return sfnc(*a, **kw)
-
     return SynchronizedContainer(obj)
 
 class MatchingStream:
