@@ -88,6 +88,6 @@ class MatchingStream:
                             del d[k]
             except Empty as e:
                 if not yielded:
-                    raise e
+                    raise StopIteration()
                 else:
                     break
