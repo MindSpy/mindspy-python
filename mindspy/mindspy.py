@@ -60,7 +60,7 @@ class MindSpy(object):
             raise TypeError("Expecting MatchingStream instance.")
         self._stream = stream
 
-    def handle(self, req, timeout=1.0, extract=None):
+    def _handle(self, req, timeout=1.0, extract=None):
         if not extract:
             extract = lambda x:x
         # send request to stream queue
@@ -106,20 +106,20 @@ class MindSpy(object):
         return req
 
     def echo(self, timeout=1.0, **kw ):
-        return self.handle(self._req_echo(**kw), timeout=timeout)
+        return self._handle(self._req_echo(**kw), timeout=timeout)
 
     def getModelName(self, timeout=1.0, **kw ):
-        return self.handle(self._req_get_model_name(**kw), timeout=timeout, extract=lambda msg: msg.modelName)
+        return self._handle(self._req_get_model_name(**kw), timeout=timeout, extract=lambda msg: msg.modelName)
 
     def getState(self, addresses, timeout=1.0, **kw ):
-        return self.handle(self._req_get_state(addresses, **kw), timeout=timeout, extract=lambda msg: msg.states)
+        return self._handle(self._req_get_state(addresses, **kw), timeout=timeout, extract=lambda msg: msg.states)
 
     def setState(self, states, timeout=1.0, **kw ):
-        return self.handle(self._req_set_state(states, **kw), timeout=timeout, extract=lambda msg: None )
+        return self._handle(self._req_set_state(states, **kw), timeout=timeout, extract=lambda msg: None )
 
     def getSamples(self, count, timeout=1.0, **kw ):
-        return self.handle(self._req_get_samples(count, **kw), timeout=timeout, extract=lambda msg: msg.samples )
+        return self._handle(self._req_get_samples(count, **kw), timeout=timeout, extract=lambda msg: msg.samples )
 
     def sensors(self, timeout = 1.0):
-        for res in self.handle(self._req_get_model_name(), timeout=timeout ):
+        for res in self._handle(self._req_get_model_name(), timeout=timeout ):
             yield Sensor(self, res.module, res.modelName)
